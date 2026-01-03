@@ -7,47 +7,61 @@ function page() {
   const [prediction, setPrediction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const pollinationsImage = (prompt) =>
+    `https://image.pollinations.ai/prompt/${encodeURIComponent(
+      prompt
+    )}?width=512&height=512&seed=${Math.floor(Math.random() * 100000)}`;
+
   const handlePredict = async () => {
     if (!resolution.trim()) return;
 
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/mirror", {
+      // Call Gemini mirror API
+      const mirrorRes = await fetch("/api/mirror", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ resolution }),
       });
 
-      const data = await res.json();
-
-      if (!data.genjitsu || !data.mirai) {
-        throw new Error("Mirror data missing");
+      if (!mirrorRes.ok) {
+        throw new Error("Mirror API failed");
       }
 
+      const mirrorData = await mirrorRes.json();
+
+      // Build image URLs using Pollinations
+      const genjitsuImageUrl = pollinationsImage(
+        `dark, muted, realistic, cinematic, failure, empty atmosphere, ${mirrorData.genjitsu.image_prompt}`
+      );
+
+      const miraiImageUrl = pollinationsImage(
+        `bright, warm lighting, hopeful, cinematic, success, peaceful atmosphere, ${mirrorData.mirai.image_prompt}`
+      );
+
+      // Update UI state
       setPrediction({
         likelyReality: {
-          date: data.genjitsu.date,
-          reason: data.genjitsu.reason,
-          explanation: data.genjitsu.explanation,
-          imageUrl: `https://source.unsplash.com/800x600/?${encodeURIComponent(
-            data.genjitsu.image_prompt
-          )}`,
-          imageDescription: data.genjitsu.image_prompt,
+          date: mirrorData.genjitsu.date,
+          reason: mirrorData.genjitsu.reason,
+          explanation: mirrorData.genjitsu.explanation,
+          imageUrl: genjitsuImageUrl,
+          imageDescription: mirrorData.genjitsu.image_prompt,
         },
         possibleFuture: {
-          date: data.mirai.date,
-          reason: data.mirai.reason,
-          explanation: data.mirai.explanation,
-          imageUrl: `https://source.unsplash.com/800x600/?${encodeURIComponent(
-            data.mirai.image_prompt
-          )}`,
-          imageDescription: data.mirai.image_prompt,
+          date: mirrorData.mirai.date,
+          reason: mirrorData.mirai.reason,
+          explanation: mirrorData.mirai.explanation,
+          imageUrl: miraiImageUrl,
+          imageDescription: mirrorData.mirai.image_prompt,
         },
       });
     } catch (err) {
-      console.error("Prediction failed:", err);
-      alert("The mirror couldn't form clearly. Try again.");
+      console.error(err);
+      alert("The mirror failed to reflect clearly. Please try again.");
     } finally {
       setIsLoading(false);
     }
