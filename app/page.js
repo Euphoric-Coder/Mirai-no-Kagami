@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader } from "lucide-react";
 import { useState } from "react";
 
 function page() {
@@ -78,7 +79,7 @@ function page() {
             Mirai no kagami (未来の鏡)
           </h1>
           <p className="text-lg sm:text-xl text-white/70 font-normal">
-            Because most resolutions don't survive January.
+            Two reflections. One choice. One year.
           </p>
         </div>
 
@@ -101,7 +102,7 @@ function page() {
                 disabled={isLoading}
               />
               <p className="text-sm text-white/50 mt-2 font-light">
-                Be honest. We've seen everything.
+                Just type what's on your mind. This mirror listens.
               </p>
             </div>
 
@@ -112,7 +113,9 @@ function page() {
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="animate-spin">⏳</span>
+                  <span className="animate-spin">
+                    <Loader />
+                  </span>
                   Predicting your reality...
                 </span>
               ) : (
@@ -135,15 +138,14 @@ function page() {
                   </p>
                 </div>
                 <p className="text-white/80 leading-relaxed text-lg font-light">
-                  Here's what we see: two versions of your future. One is
-                  honest. One is possible. Neither is wrong.
+                  What follows isn’t fate — just two paths quietly waiting.
                 </p>
               </div>
             </div>
 
             <div className="text-center max-w-2xl mx-auto">
               <p className="text-white/70 text-lg leading-relaxed italic font-light">
-                Both futures exist. The difference is repetition.
+                Both futures are real. Only one asks you to return tomorrow.
               </p>
             </div>
 
@@ -245,7 +247,7 @@ function page() {
               >
                 <div className="space-y-4 text-center">
                   <p className="text-lg leading-relaxed text-white/80 font-light">
-                    This isn't judgement — just a mirror.
+                    This mirror doesn’t judge. It only reflects.
                   </p>
                   <p className="text-sm text-white/60 font-light">
                     You don't need perfection. Just one more day than yesterday.
