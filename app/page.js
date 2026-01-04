@@ -8,10 +8,21 @@ function page() {
   const [prediction, setPrediction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const pollinationsImage = (prompt) =>
-    `https://image.pollinations.ai/prompt/${encodeURIComponent(
-      prompt
-    )}?width=512&height=512&seed=${Math.floor(Math.random() * 100000)}`;
+  const generateImage = async (
+    prompt,
+    model = "gemini-2.5-flash-image-preview"
+  ) => {
+    if (!window.puter) {
+      throw new Error("Puter.js not loaded");
+    }
+
+    const imgElement = await window.puter.ai.txt2img(prompt, {
+      model,
+    });
+
+    return imgElement.src; // 🔑 return usable image URL
+  };
+
 
   const handlePredict = async () => {
     if (!resolution.trim()) return;
@@ -19,54 +30,62 @@ function page() {
     setIsLoading(true);
 
     try {
-      // Call Gemini mirror API
+      // 1️⃣ Fetch mirror text from Gemini
       const mirrorRes = await fetch("/api/mirror", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resolution }),
       });
 
-      if (!mirrorRes.ok) {
-        throw new Error("Mirror API failed");
-      }
+      if (!mirrorRes.ok) throw new Error("Mirror API failed");
 
       const mirrorData = await mirrorRes.json();
 
-      // Build image URLs using Pollinations
-      const genjitsuImageUrl = pollinationsImage(
-        `dark, muted, realistic, cinematic, failure, empty atmosphere, ${mirrorData.genjitsu.image_prompt}`
-      );
+      // 2️⃣ Generate images via Puter.js
+      const genjitsuPrompt = `
+dark, muted, cinematic realism,
+lonely atmosphere, failure, stagnation,
+soft shadows, empty room,
+symbol of lost motivation,
+${mirrorData.genjitsu.image_prompt}
+`;
 
-      const miraiImageUrl = pollinationsImage(
-        `bright, warm lighting, hopeful, cinematic, success, peaceful atmosphere, ${mirrorData.mirai.image_prompt}`
-      );
+      const miraiPrompt = `
+bright, warm lighting, hopeful,
+cinematic, peaceful success,
+golden hour, growth, clarity,
+symbol of consistency,
+${mirrorData.mirai.image_prompt}
+`;
 
-      // Update UI state
+      const genjitsuImage = await generateImage(genjitsuPrompt);
+      const miraiImage = await generateImage(miraiPrompt);
+
+      // 3️⃣ Update UI
       setPrediction({
         likelyReality: {
           date: mirrorData.genjitsu.date,
           reason: mirrorData.genjitsu.reason,
           explanation: mirrorData.genjitsu.explanation,
-          imageUrl: genjitsuImageUrl,
+          imageUrl: genjitsuImage,
           imageDescription: mirrorData.genjitsu.image_prompt,
         },
         possibleFuture: {
           date: mirrorData.mirai.date,
           reason: mirrorData.mirai.reason,
           explanation: mirrorData.mirai.explanation,
-          imageUrl: miraiImageUrl,
+          imageUrl: miraiImage,
           imageDescription: mirrorData.mirai.image_prompt,
         },
       });
     } catch (err) {
       console.error(err);
-      alert("The mirror failed to reflect clearly. Please try again.");
+      alert("The mirror is cloudy today. Try again.");
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen">
@@ -182,6 +201,9 @@ function page() {
                     </p>
 
                     <div className="relative rounded-xl overflow-hidden bg-white/5 h-64 border border-orange-400/20">
+                      {!prediction?.likelyReality?.imageUrl && (
+                        <div className="h-64 bg-white/5 animate-pulse rounded-xl" />
+                      )}
                       <img
                         src={prediction.likelyReality.imageUrl}
                         alt={prediction.likelyReality.imageDescription}
@@ -226,6 +248,9 @@ function page() {
                     </p>
 
                     <div className="relative rounded-xl overflow-hidden bg-white/5 h-64 border border-rose-400/20">
+                      {!prediction?.possibleFuture?.imageUrl && (
+                        <div className="h-64 bg-white/5 animate-pulse rounded-xl" />
+                      )}
                       <img
                         src={prediction.possibleFuture.imageUrl}
                         alt={prediction.possibleFuture.imageDescription}
