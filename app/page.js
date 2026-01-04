@@ -95,7 +95,7 @@ ${mirrorData.mirai.image_prompt}
             <span className="text-5xl">✨</span>
           </div>
           <h1 className="text-5xl sm:text-6xl font-bold text-white mb-3">
-            Mirai no kagami (未来の鏡)
+            Mirai no kagami (未来の鏡) 2026
           </h1>
           <p className="text-lg sm:text-xl text-white/70 font-normal">
             Two reflections. One choice. One year.
