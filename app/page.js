@@ -8,21 +8,10 @@ function page() {
   const [prediction, setPrediction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const generateImage = async (
-    prompt,
-    model = "gemini-2.5-flash-image-preview"
-  ) => {
-    if (!window.puter) {
-      throw new Error("Puter.js not loaded");
-    }
-
-    const imgElement = await window.puter.ai.txt2img(prompt, {
-      model,
-    });
-
-    return imgElement.src; // 🔑 return usable image URL
-  };
-
+  const pollinationsImage = (prompt) =>
+    `https://image.pollinations.ai/prompt/${encodeURIComponent(
+      prompt
+    )}?width=512&height=512&seed=${Math.floor(Math.random() * 100000)}`;
 
   const handlePredict = async () => {
     if (!resolution.trim()) return;
@@ -30,62 +19,54 @@ function page() {
     setIsLoading(true);
 
     try {
-      // 1️⃣ Fetch mirror text from Gemini
+      // Call Gemini mirror API
       const mirrorRes = await fetch("/api/mirror", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ resolution }),
       });
 
-      if (!mirrorRes.ok) throw new Error("Mirror API failed");
+      if (!mirrorRes.ok) {
+        throw new Error("Mirror API failed");
+      }
 
       const mirrorData = await mirrorRes.json();
 
-      // 2️⃣ Generate images via Puter.js
-      const genjitsuPrompt = `
-dark, muted, cinematic realism,
-lonely atmosphere, failure, stagnation,
-soft shadows, empty room,
-symbol of lost motivation,
-${mirrorData.genjitsu.image_prompt}
-`;
+      // Build image URLs using Pollinations
+      const genjitsuImageUrl = pollinationsImage(
+        `dark, muted, realistic, cinematic, failure, empty atmosphere, ${mirrorData.genjitsu.image_prompt}`
+      );
 
-      const miraiPrompt = `
-bright, warm lighting, hopeful,
-cinematic, peaceful success,
-golden hour, growth, clarity,
-symbol of consistency,
-${mirrorData.mirai.image_prompt}
-`;
+      const miraiImageUrl = pollinationsImage(
+        `bright, warm lighting, hopeful, cinematic, success, peaceful atmosphere, ${mirrorData.mirai.image_prompt}`
+      );
 
-      const genjitsuImage = await generateImage(genjitsuPrompt);
-      const miraiImage = await generateImage(miraiPrompt);
-
-      // 3️⃣ Update UI
+      // Update UI state
       setPrediction({
         likelyReality: {
           date: mirrorData.genjitsu.date,
           reason: mirrorData.genjitsu.reason,
           explanation: mirrorData.genjitsu.explanation,
-          imageUrl: genjitsuImage,
+          imageUrl: genjitsuImageUrl,
           imageDescription: mirrorData.genjitsu.image_prompt,
         },
         possibleFuture: {
           date: mirrorData.mirai.date,
           reason: mirrorData.mirai.reason,
           explanation: mirrorData.mirai.explanation,
-          imageUrl: miraiImage,
+          imageUrl: miraiImageUrl,
           imageDescription: mirrorData.mirai.image_prompt,
         },
       });
     } catch (err) {
       console.error(err);
-      alert("The mirror is cloudy today. Try again.");
+      alert("The mirror failed to reflect clearly. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen">
@@ -95,7 +76,7 @@ ${mirrorData.mirai.image_prompt}
             <span className="text-5xl">✨</span>
           </div>
           <h1 className="text-5xl sm:text-6xl font-bold text-white mb-3">
-            Mirai no kagami (未来の鏡) 2026
+            Mirai no kagami (未来の鏡)
           </h1>
           <p className="text-lg sm:text-xl text-white/70 font-normal">
             Two reflections. One choice. One year.
@@ -201,9 +182,6 @@ ${mirrorData.mirai.image_prompt}
                     </p>
 
                     <div className="relative rounded-xl overflow-hidden bg-white/5 h-64 border border-orange-400/20">
-                      {!prediction?.likelyReality?.imageUrl && (
-                        <div className="h-64 bg-white/5 animate-pulse rounded-xl" />
-                      )}
                       <img
                         src={prediction.likelyReality.imageUrl}
                         alt={prediction.likelyReality.imageDescription}
@@ -248,9 +226,6 @@ ${mirrorData.mirai.image_prompt}
                     </p>
 
                     <div className="relative rounded-xl overflow-hidden bg-white/5 h-64 border border-rose-400/20">
-                      {!prediction?.possibleFuture?.imageUrl && (
-                        <div className="h-64 bg-white/5 animate-pulse rounded-xl" />
-                      )}
                       <img
                         src={prediction.possibleFuture.imageUrl}
                         alt={prediction.possibleFuture.imageDescription}
